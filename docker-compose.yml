@@ -1,0 +1,41 @@
+name: konstruxio
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: konstruxio-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-konstruxio}
+      POSTGRES_USER: ${POSTGRES_USER:-konstruxio}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-local}
+    ports:
+      - "5432:5432"
+    volumes:
+      - konstruxio_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-konstruxio} -d ${POSTGRES_DB:-konstruxio}"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  media-ai:
+    build: ./media-ai
+    container_name: konstruxio-media-ai
+    ports:
+      - "8090:8090"
+    environment:
+      WHISPER_MODEL: ${WHISPER_MODEL:-small}
+      WHISPER_DEVICE: ${WHISPER_DEVICE:-cpu}
+      WHISPER_COMPUTE_TYPE: ${WHISPER_COMPUTE_TYPE:-int8}
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: konstruxio-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - konstruxio_ollama:/root/.ollama
+
+volumes:
+  konstruxio_pgdata:
+  konstruxio_ollama:
