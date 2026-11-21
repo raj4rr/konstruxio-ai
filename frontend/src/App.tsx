@@ -41,12 +41,19 @@ type Tab =
   | 'documents'
 
 export default function App() {
-  const [auth, setAuth] = useState(!!localStorage.getItem('konstruxio_token'))
+  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+  const tokenParam = urlParams?.get('token')
+  const tabParam = urlParams?.get('tab') as Tab | null
+  if (tokenParam && typeof localStorage !== 'undefined') {
+    localStorage.setItem('konstruxio_token', tokenParam)
+  }
+
+  const [auth, setAuth] = useState(!!(typeof localStorage !== 'undefined' && localStorage.getItem('konstruxio_token')))
   const [mode, setMode] = useState<'login' | 'register'>('register')
   const [form, setForm] = useState({ organizationName: '', fullName: '', email: '', password: '' })
   const [projects, setProjects] = useState<Project[]>([])
   const [selected, setSelected] = useState('')
-  const [tab, setTab] = useState<Tab>('overview')
+  const [tab, setTab] = useState<Tab>(tabParam || 'overview')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [items, setItems] = useState<any[]>([])
@@ -332,6 +339,16 @@ export default function App() {
                 <span className="eyebrow light">YOUR SITE, IN SYNC</span>
                 <h2>Build with clarity.<br />Move work forward.</h2>
                 <p>Voice-first field dictation, spatial blueprint pinning, photo defect inspection, and automated owner reports.</p>
+                <div style={{ marginTop: '14px', display: 'flex', gap: '10px' }}>
+                  <a
+                    href="/KONSTRUXIO_AI_Standard_Operating_Procedures.pdf"
+                    download="KONSTRUXIO_AI_Standard_Operating_Procedures.pdf"
+                    className="secondary compact"
+                    style={{ textDecoration: 'none', background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.3)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Download size={14} /> 📄 Download Complete SOP Manual (PDF)
+                  </a>
+                </div>
               </div>
               <div className="welcomeMark"><HardHat size={78} /></div>
             </section>
