@@ -16,7 +16,8 @@ import {
   Camera,
   BarChart3,
   Download,
-  Zap
+  Zap,
+  Users
 } from 'lucide-react'
 import { VoiceAgentView } from './VoiceAgentView'
 import { BlueprintView } from './BlueprintView'
@@ -24,6 +25,7 @@ import { PhotoSnaggingView } from './PhotoSnaggingView'
 import { ExecutiveReportView } from './ExecutiveReportView'
 import { KonstruxioCopilotView } from './KonstruxioCopilotView'
 import { ProjectWalkthroughSlide } from './ProjectWalkthroughSlide'
+import { UserProfileManagerView } from './UserProfileManagerView'
 
 type Project = { id: string; name: string; description?: string; location?: string; status: string }
 type Tab =
@@ -36,6 +38,10 @@ type Tab =
   | 'projects'
   | 'tasks'
   | 'issues'
+  | 'reports'
+  | 'documents'
+  | 'users'
+  | 'assistant'
   | 'reports'
   | 'assistant'
   | 'documents'
@@ -266,10 +272,48 @@ export default function App() {
           <button type="button" className="link" onClick={() => setMode(mode === 'register' ? 'login' : 'register')}>
             {mode === 'register' ? 'Already registered? Sign in' : 'Create an account'}
           </button>
-          <div className="demoDivider"><span>OR INSTANT DEMO</span></div>
+          <div className="demoDivider"><span>OR INSTANT DEMO & ROLE LOGIN (Password: Hello@123)</span></div>
           <button type="button" className="secondary demoBtn" onClick={loadDemoProject} disabled={busy}>
-            🚀 One-Click Demo (Pre-populated Project)
+            🚀 One-Click Demo (Lead Superintendent & Owner)
           </button>
+
+          <div style={{ marginTop: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              🔑 Quick Role Logins (Password: <code style={{ color: '#0284c7', background: '#e0f2fe', padding: '1px 5px', borderRadius: '4px' }}>Hello@123</code>)
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
+              {[
+                { label: '👑 Project Owner', email: 'owner@konstruxio.ai' },
+                { label: '🏗️ Project Manager', email: 'pm@konstruxio.ai' },
+                { label: '👷 Field Engineer', email: 'engineer@konstruxio.ai' },
+                { label: '🔨 Subcontractor', email: 'subcontractor@konstruxio.ai' },
+                { label: '👁️ Inspector / Viewer', email: 'viewer@konstruxio.ai' }
+              ].map(r => (
+                <button
+                  key={r.email}
+                  type="button"
+                  style={{
+                    fontSize: '11px',
+                    padding: '6px 8px',
+                    textAlign: 'left',
+                    background: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}
+                  onClick={() => {
+                    setMode('login')
+                    setForm({ ...form, email: r.email, password: 'Hello@123' })
+                  }}
+                >
+                  <span style={{ fontWeight: 600, color: '#0f172a' }}>{r.label}</span>
+                  <span style={{ fontSize: '10px', color: '#64748b' }}>{r.email}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </form>
       </main>
     )
@@ -287,6 +331,7 @@ export default function App() {
     ['issues', 'Site issues', AlertTriangle],
     ['reports', 'Daily reports', FileText],
     ['documents', 'Documents & RAG', FileText],
+    ['users', 'Team & Profile', Users],
     ['assistant', 'AI Assistant', Sparkles]
   ]
 
@@ -681,6 +726,11 @@ export default function App() {
               </>
             )}
           </section>
+        )}
+
+        {/* User Profile & Team Management (RBAC) */}
+        {tab === 'users' && (
+          <UserProfileManagerView onProfileUpdated={() => refreshData()} />
         )}
 
         <footer>Konstruxio AI <span>·</span> Next-generation voice &amp; vision construction operations.</footer>

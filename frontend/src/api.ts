@@ -112,5 +112,14 @@ export const api = {
   tmTickets: (projectId: string) => request<any[]>(`/api/projects/${projectId}/tm-tickets`),
   createTmTicket: (projectId: string, data: any) => request<any>(`/api/projects/${projectId}/tm-tickets`, { method: 'POST', body: JSON.stringify(data) }),
   signTmTicket: (projectId: string, id: string, signedBy?: string, signature?: string) => request<any>(`/api/projects/${projectId}/tm-tickets/${id}/sign`, { method: 'PUT', body: JSON.stringify({ signedBy: signedBy || 'Client Representative', signature: signature || 'DIGITALLY_APPROVED' }) }),
-  deleteTmTicket: (projectId: string, id: string) => request<any>(`/api/projects/${projectId}/tm-tickets/${id}`, { method: 'DELETE' })
+  deleteTmTicket: (projectId: string, id: string) => request<any>(`/api/projects/${projectId}/tm-tickets/${id}`, { method: 'DELETE' }),
+
+  // Feature 6: User Profile & Role-Based Access Control (RBAC)
+  currentUserProfile: () => request<any>('/api/users/me'),
+  updateCurrentUserProfile: (data: any) => request<any>('/api/users/me', { method: 'PUT', body: JSON.stringify(data) }),
+  roles: () => request<any[]>('/api/users/roles'),
+  users: () => request<any[]>('/api/users'),
+  createUser: (data: any) => request<any>('/api/users', { method: 'POST', body: JSON.stringify(data) }),
+  updateUserRole: (id: string, role: string) => request<any>(`/api/users/${id}/role`, { method: 'PUT', body: JSON.stringify({ role }) }),
+  deleteUser: (id: string) => request<any>(`/api/users/${id}`, { method: 'DELETE' })
 }

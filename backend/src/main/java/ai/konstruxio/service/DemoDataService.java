@@ -87,19 +87,21 @@ public class DemoDataService {
                 } else {
                     org = organizations.saveAndFlush(new Organization("Konstruxio Construction Group"));
                     user.organizationId = org.id;
-                    user = users.saveAndFlush(user);
                 }
             } else {
                 org = organizations.saveAndFlush(new Organization("Konstruxio Construction Group"));
                 user = new AppUser();
                 user.organizationId = org.id;
-                user.fullName = "Markus Vance (Senior Superintendent)";
+                user.fullName = "Markus Vance (Project Owner & Lead Superintendent)";
                 user.email = demoEmail;
-                user.passwordHash = encoder.encode("Password123!");
-                user.role = "ADMIN";
-                user = users.saveAndFlush(user);
             }
+            user.passwordHash = encoder.encode("Hello@123");
+            user.role = "PROJECT_OWNER";
+            user = users.saveAndFlush(user);
         }
+
+        // Always guarantee all 5 distinct role users exist with password Hello@123
+        seedAllRoleUsers(org.id);
 
         // Check if sample project already exists in this organization
         List<Project> existing = projects.findAllByOrganizationIdOrderByCreatedAtDesc(org.id);
@@ -451,5 +453,32 @@ public class DemoDataService {
         if (signer != null) t.signedAt = java.time.Instant.now().minus(java.time.Duration.ofHours(24));
         t.createdBy = userId;
         tmTickets.save(t);
+    }
+
+    public void seedAllRoleUsers(UUID orgId) {
+        // Master demo user and core role accounts with standard credentials: Hello@123
+        seedTeamMember(orgId, "Markus Vance (Lead Superintendent & Owner)", "demo@konstruxio.ai", "PROJECT_OWNER");
+        seedTeamMember(orgId, "Markus Vance (Project Owner)", "owner@konstruxio.ai", "PROJECT_OWNER");
+        seedTeamMember(orgId, "Elena Rostova (Senior Project Manager)", "pm@konstruxio.ai", "PROJECT_MANAGER");
+        seedTeamMember(orgId, "David Chen (Lead Field Engineer)", "engineer@konstruxio.ai", "FIELD_ENGINEER");
+        seedTeamMember(orgId, "Stefan Maier (Structural Subcontractor)", "subcontractor@konstruxio.ai", "SUBCONTRACTOR");
+        seedTeamMember(orgId, "Sarah Jenkins (Municipal Inspector / Viewer)", "viewer@konstruxio.ai", "VIEWER");
+
+        // Named accounts with standard credentials: Hello@123
+        seedTeamMember(orgId, "Elena Rostova", "elena.rostova@konstruxio.ai", "PROJECT_MANAGER");
+        seedTeamMember(orgId, "David Chen", "david.chen@konstruxio.ai", "FIELD_ENGINEER");
+        seedTeamMember(orgId, "Stefan Maier", "stefan.maier@sub-structural.com", "SUBCONTRACTOR");
+        seedTeamMember(orgId, "Sarah Jenkins", "sarah.jenkins@inspections-gov.de", "VIEWER");
+    }
+
+    private void seedTeamMember(UUID orgId, String fullName, String email, String role) {
+        Optional<AppUser> existing = users.findByEmailIgnoreCase(email);
+        AppUser u = existing.orElseGet(AppUser::new);
+        u.organizationId = orgId;
+        u.fullName = fullName;
+        u.email = email.toLowerCase();
+        u.passwordHash = encoder.encode("Hello@123");
+        u.role = role;
+        users.saveAndFlush(u);
     }
 }

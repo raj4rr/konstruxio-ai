@@ -194,6 +194,69 @@ Establishes hyper-local crane wind speed thresholds, concrete freeze prevention 
 
 ---
 
+## SOP-09: User Profile Manager, Role-Based Access Control (RBAC) & Team Management
+
+### 1. Purpose & Administrative Scope
+Governs user credential maintenance, organization team onboarding, and fine-grained Role-Based Access Control (RBAC) across all KONSTRUXIO AI workspace modules. The **Project Owner** (`PROJECT_OWNER` / `ADMIN`) possesses full authority to invite members, reassign roles, and manage site access.
+
+---
+
+### 2. Standard Role Accounts & Credentials
+All system roles are pre-configured with the standard security passkey **`Hello@123`** for seamless verification and role demonstration:
+
+| System Role | Account Email | Display Name | Primary Responsibilities | Password |
+| :--- | :--- | :--- | :--- | :--- |
+| **👑 Project Owner** | `owner@konstruxio.ai` *(or demo@konstruxio.ai)* | Markus Vance | Full workspace administration, user onboarding, role reassignment, executive approvals | `Hello@123` |
+| **🏗️ Project Manager** | `pm@konstruxio.ai` *(or elena.rostova@konstruxio.ai)* | Elena Rostova | Project planning, schedule tasks, defect resolution, report publishing | `Hello@123` |
+| **👷 Field Engineer** | `engineer@konstruxio.ai` *(or david.chen@konstruxio.ai)* | David Chen | Spatial blueprint pinning, photo defect capture, voice field dictation | `Hello@123` |
+| **🔨 Subcontractor** | `subcontractor@konstruxio.ai` *(or stefan.maier@sub-structural.com)* | Stefan Maier | Task execution, trade defect rectification, daily labor logging | `Hello@123` |
+| **👁️ Inspector / Viewer** | `viewer@konstruxio.ai` *(or sarah.jenkins@inspections-gov.de)* | Sarah Jenkins | Read-only compliance audits, executive report downloads, plan inspection | `Hello@123` |
+
+---
+
+### 3. Step-by-Step Operational Workflow with Screenshots
+
+#### Step 1: Multi-Role Authentication & Quick Access
+1. Navigate to the login portal at `http://localhost:5173/`.
+2. Enter the user's role email (e.g. `owner@konstruxio.ai`) and password **`Hello@123`**, or click the corresponding quick role button.
+3. Click **"Sign in"** to authenticate via JWT token.
+
+![Step 1: Role-Based Access Login Portal with Quick Role Buttons and Hello@123 Credentials](screenshots/step1_role_based_login.png)
+
+#### Step 2: Personal Profile & Security Credential Maintenance
+1. Select **"Team & Profile"** from the workspace sidebar.
+2. Select the **"My Profile & Credentials"** tab.
+3. Verify your assigned role badge, organization identifier, and active field permissions.
+4. To update your password, enter your current password (**`Hello@123`**) and specify a new passkey, then click **"Update Profile & Password"**.
+
+![Step 2: Personal Profile & Credential Management with Active Role Permissions](screenshots/step2_my_profile_credentials.png)
+
+#### Step 3: Organization Team Roster & 1-Click Role Switcher (Project Owner Only)
+1. In the **Team & Profile** view, switch to the **"Team & Role-Based Access"** tab.
+2. Review real-time metrics: Total Users, Project Owners, Active Roles, and Safety Lock status.
+3. Browse the live team member table displaying all active users.
+4. To modify an employee's role, select the inline **Role Dropdown** and pick the desired role (*Project Owner, Project Manager, Field Engineer, Subcontractor, or Viewer*). The permission level updates instantly in the database.
+
+![Step 3: Organization Team Roster with Real-Time Metrics and Instant Inline Role Switcher](screenshots/step3_team_rbac_management.png)
+
+#### Step 4: Onboarding & Inviting New Team Members
+1. Click the **"+ Add Team Member"** button in the upper-right corner of the Team tab.
+2. Complete the modal form:
+   * **Full Name:** Enter the member's legal/jobsite name (e.g., *Marcus Berg*).
+   * **Work Email:** Enter the company email address.
+   * **Assigned Role:** Select the appropriate tier from the dropdown.
+   * **Temporary Password:** Defaults to **`Hello@123`** for standardized onboarding.
+3. Click **"Create Member Account"**. The user is immediately provisioned and can log in without manual email verification.
+
+![Step 4: Add New Team Member Modal with Role Selection and Default Password Hello@123](screenshots/step4_add_team_member_modal.png)
+
+#### Step 5: Built-in Safety Safeguards
+* **Orphan Prevention Lock:** The system prevents the last remaining Project Owner from being deleted or demoted.
+* **Self-Deletion Protection:** An authenticated user cannot delete their own active account.
+* **Tenant Isolation:** All user mutations are strictly bounded by `organization_id`.
+
+---
+
 ## 3. Document Verification & Sign-Off
 
 This document and associated PDF have been reviewed and validated against live runtime deployment on **November 21, 2026**.
