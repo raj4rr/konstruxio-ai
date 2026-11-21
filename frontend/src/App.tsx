@@ -17,7 +17,13 @@ import {
   BarChart3,
   Download,
   Zap,
-  Users
+  Users,
+  Shield,
+  ShieldCheck,
+  Crown,
+  Eye,
+  Wrench,
+  UserCheck
 } from 'lucide-react'
 import { VoiceAgentView } from './VoiceAgentView'
 import { BlueprintView } from './BlueprintView'
@@ -42,9 +48,117 @@ type Tab =
   | 'documents'
   | 'users'
   | 'assistant'
-  | 'reports'
-  | 'assistant'
-  | 'documents'
+
+function parseJwtRole(token: string | null): string {
+  if (!token) return 'PROJECT_OWNER'
+  try {
+    const base64Url = token.split('.')[1]
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    )
+    return JSON.parse(jsonPayload).role || 'PROJECT_OWNER'
+  } catch {
+    return 'PROJECT_OWNER'
+  }
+}
+
+function getRoleBadge(role: string) {
+  switch (role) {
+    case 'PROJECT_OWNER':
+    case 'ADMIN':
+      return '👑 Project Owner'
+    case 'PROJECT_MANAGER':
+      return '🏗️ Project Manager'
+    case 'FIELD_ENGINEER':
+      return '👷 Field Engineer'
+    case 'SUBCONTRACTOR':
+      return '🔨 Subcontractor'
+    case 'VIEWER':
+      return '👁️ Inspector / Viewer'
+    default:
+      return role
+  }
+}
+
+const ROLE_ALLOWED_TABS: Record<string, Tab[]> = {
+  PROJECT_OWNER: [
+    'overview',
+    'copilot',
+    'voice',
+    'blueprints',
+    'snagging',
+    'executive',
+    'projects',
+    'tasks',
+    'issues',
+    'reports',
+    'documents',
+    'users',
+    'assistant'
+  ],
+  ADMIN: [
+    'overview',
+    'copilot',
+    'voice',
+    'blueprints',
+    'snagging',
+    'executive',
+    'projects',
+    'tasks',
+    'issues',
+    'reports',
+    'documents',
+    'users',
+    'assistant'
+  ],
+  PROJECT_MANAGER: [
+    'overview',
+    'copilot',
+    'voice',
+    'blueprints',
+    'snagging',
+    'executive',
+    'projects',
+    'tasks',
+    'issues',
+    'reports',
+    'documents',
+    'users',
+    'assistant'
+  ],
+  FIELD_ENGINEER: [
+    'overview',
+    'voice',
+    'blueprints',
+    'snagging',
+    'tasks',
+    'issues',
+    'reports',
+    'documents',
+    'users',
+    'assistant'
+  ],
+  SUBCONTRACTOR: [
+    'overview',
+    'tasks',
+    'issues',
+    'blueprints',
+    'reports',
+    'users'
+  ],
+  VIEWER: [
+    'overview',
+    'executive',
+    'blueprints',
+    'issues',
+    'reports',
+    'users'
+  ]
+}
 
 export default function App() {
   const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
@@ -55,6 +169,8 @@ export default function App() {
   }
 
   const [auth, setAuth] = useState(!!(typeof localStorage !== 'undefined' && localStorage.getItem('konstruxio_token')))
+  const [userRole, setUserRole] = useState<string>(() => parseJwtRole(typeof localStorage !== 'undefined' ? localStorage.getItem('konstruxio_token') : null))
+  const [currentUserProfile, setCurrentUserProfile] = useState<any>(null)
   const [mode, setMode] = useState<'login' | 'register'>('register')
   const [form, setForm] = useState({ organizationName: '', fullName: '', email: '', password: '' })
   const [projects, setProjects] = useState<Project[]>([])
@@ -82,8 +198,36 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (auth) loadProjects().catch(e => setError(e.message))
+    if (auth) {
+      loadProjects().catch(e => setError(e.message))
+      api.currentUserProfile()
+        .then(p => {
+          setCurrentUserProfile(p)
+          if (p.role) setUserRole(p.role)
+        })
+        .catch(() => {})
+    }
   }, [auth])
+
+  async function switchRoleLogin(email: string) {
+    setBusy(true)
+    setError('')
+    try {
+      const r = await api.login({ email, password: 'Hello@123' })
+      localStorage.setItem('konstruxio_token', r.token)
+      const role = r.role || 'PROJECT_OWNER'
+      setUserRole(role)
+      setCurrentUserProfile(r)
+      setAuth(true)
+      const allowed = ROLE_ALLOWED_TABS[role] || ROLE_ALLOWED_TABS.PROJECT_OWNER
+      if (!allowed.includes(tab)) setTab('overview')
+      await loadProjects()
+    } catch (e: any) {
+      setError('Role switch failed: ' + e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
 
   async function refreshData() {
     if (!auth || !selected) return
@@ -108,6 +252,8 @@ export default function App() {
     try {
       const r = mode === 'register' ? await api.register(form) : await api.login(form)
       localStorage.setItem('konstruxio_token', r.token)
+      setUserRole(r.role || 'PROJECT_OWNER')
+      setCurrentUserProfile(r)
       setAuth(true)
     } catch (e: any) {
       setError(e.message)
@@ -319,7 +465,14 @@ export default function App() {
     )
   }
 
-  const nav: [Tab, string, any][] = [
+  const allowedTabs = ROLE_ALLOWED_TABS[userRole] || ROLE_ALLOWED_TABS.PROJECT_OWNER
+  const isOwner = userRole === 'PROJECT_OWNER' || userRole === 'ADMIN'
+  const isPM = userRole === 'PROJECT_MANAGER'
+  const isField = userRole === 'FIELD_ENGINEER'
+  const isSub = userRole === 'SUBCONTRACTOR'
+  const isViewer = userRole === 'VIEWER'
+
+  const allNav: [Tab, string, any][] = [
     ['overview', 'Overview', LayoutDashboard],
     ['copilot', '⚡ KONSTRUXIO AI Suite', Sparkles],
     ['voice', 'Voice-to-Action', Mic],
@@ -331,9 +484,11 @@ export default function App() {
     ['issues', 'Site issues', AlertTriangle],
     ['reports', 'Daily reports', FileText],
     ['documents', 'Documents & RAG', FileText],
-    ['users', 'Team & Profile', Users],
+    ['users', isOwner ? 'Team & Profile' : 'My Profile', Users],
     ['assistant', 'AI Assistant', Sparkles]
   ]
+
+  const nav = allNav.filter(([id]) => allowedTabs.includes(id))
 
   return (
     <div className="app">
@@ -343,6 +498,27 @@ export default function App() {
           <div><b>KONSTRUXIO</b><small>AI CONSTRUCTION</small></div>
         </div>
         <div className="workspace">WORKSPACE <span>●</span></div>
+
+        {/* Dynamic Role Badge & Access Level */}
+        <div style={{
+          padding: '8px 12px',
+          background: 'rgba(255, 255, 255, 0.06)',
+          borderRadius: '8px',
+          margin: '6px 12px 10px',
+          border: '1px solid rgba(255, 255, 255, 0.1)'
+        }}>
+          <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700, letterSpacing: '0.5px', marginBottom: '3px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>ACTIVE ROLE</span>
+            <span style={{ color: '#38bdf8', fontSize: '9px', fontWeight: 800, background: 'rgba(56,189,248,0.2)', padding: '1px 5px', borderRadius: '4px' }}>RBAC</span>
+          </div>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {getRoleBadge(userRole)}
+          </div>
+          <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>
+            Showing {nav.length} of {allNav.length} permitted menus
+          </div>
+        </div>
+
         <nav>
           {nav.map(([id, label, Icon]) => (
             <button key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}>
@@ -363,14 +539,49 @@ export default function App() {
         <header>
           <div>
             <span className="eyebrow">CONSTRUCTION WORKSPACE</span>
-            <h1>{nav.find(n => n[0] === tab)?.[1]}</h1>
+            <h1>{nav.find(n => n[0] === tab)?.[1] || 'Overview'}</h1>
           </div>
-          <div className="projectSelect">
-            <span>ACTIVE PROJECT</span>
-            <select value={selected} onChange={e => setSelected(e.target.value)}>
-              <option value="">Select project</option>
-              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            {/* Quick 1-Click Role Switcher */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#f8fafc', padding: '4px 6px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', padding: '0 4px', textTransform: 'uppercase' }}>Switch Role:</span>
+              {[
+                { id: 'PROJECT_OWNER', label: '👑 Owner', email: 'owner@konstruxio.ai' },
+                { id: 'PROJECT_MANAGER', label: '🏗️ PM', email: 'pm@konstruxio.ai' },
+                { id: 'FIELD_ENGINEER', label: '👷 Field', email: 'engineer@konstruxio.ai' },
+                { id: 'SUBCONTRACTOR', label: '🔨 Sub', email: 'subcontractor@konstruxio.ai' },
+                { id: 'VIEWER', label: '👁️ Viewer', email: 'viewer@konstruxio.ai' }
+              ].map(r => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => switchRoleLogin(r.email)}
+                  disabled={busy}
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: (userRole === r.id || (r.id === 'PROJECT_OWNER' && userRole === 'ADMIN')) ? 700 : 500,
+                    padding: '3px 8px',
+                    borderRadius: '5px',
+                    border: 0,
+                    cursor: 'pointer',
+                    background: (userRole === r.id || (r.id === 'PROJECT_OWNER' && userRole === 'ADMIN')) ? '#0284c7' : 'transparent',
+                    color: (userRole === r.id || (r.id === 'PROJECT_OWNER' && userRole === 'ADMIN')) ? '#ffffff' : '#334155',
+                    transition: 'all 0.15s ease'
+                  }}
+                  title={`Switch to ${r.label} (${r.email})`}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="projectSelect">
+              <span>ACTIVE PROJECT</span>
+              <select value={selected} onChange={e => setSelected(e.target.value)}>
+                <option value="">Select project</option>
+                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
           </div>
         </header>
 
@@ -452,27 +663,50 @@ export default function App() {
             {/* Single-Slide Complete End-to-End Project Walkthrough (Minimal Clicks) */}
             <ProjectWalkthroughSlide onSelectTab={tabId => setTab(tabId)} />
 
+            {/* Quick Feature Grid filtered by role permissions */}
             <div className="quickFeatureGrid">
-              <div className="quickCard" onClick={() => setTab('voice')}>
-                <div className="qIcon mic"><Mic size={22} /></div>
-                <b>Field Voice Agent</b>
-                <p>Dictate notes on site; AI generates daily logs, tasks &amp; hazards automatically.</p>
-              </div>
-              <div className="quickCard" onClick={() => setTab('blueprints')}>
-                <div className="qIcon pin"><MapPin size={22} /></div>
-                <b>Floor Plan Pinning</b>
-                <p>Pin defects and tasks directly to 2D architectural drawings.</p>
-              </div>
-              <div className="quickCard" onClick={() => setTab('snagging')}>
-                <div className="qIcon cam"><Camera size={22} /></div>
-                <b>Photo Snagging</b>
-                <p>Snap site photos for instant AI triage, severity rating, and remediation advice.</p>
-              </div>
-              <div className="quickCard" onClick={() => setTab('executive')}>
-                <div className="qIcon rpt"><BarChart3 size={22} /></div>
-                <b>Owner Reports &amp; Weather</b>
-                <p>Live crane/concrete weather alerts and 1-click weekly executive PDFs.</p>
-              </div>
+              {allowedTabs.includes('voice') && (
+                <div className="quickCard" onClick={() => setTab('voice')}>
+                  <div className="qIcon mic"><Mic size={22} /></div>
+                  <b>Field Voice Agent</b>
+                  <p>Dictate notes on site; AI generates daily logs, tasks &amp; hazards automatically.</p>
+                </div>
+              )}
+              {allowedTabs.includes('blueprints') && (
+                <div className="quickCard" onClick={() => setTab('blueprints')}>
+                  <div className="qIcon pin"><MapPin size={22} /></div>
+                  <b>Floor Plan Pinning</b>
+                  <p>Pin defects and tasks directly to 2D architectural drawings.</p>
+                </div>
+              )}
+              {allowedTabs.includes('snagging') && (
+                <div className="quickCard" onClick={() => setTab('snagging')}>
+                  <div className="qIcon cam"><Camera size={22} /></div>
+                  <b>Photo Snagging</b>
+                  <p>Snap site photos for instant AI triage, severity rating, and remediation advice.</p>
+                </div>
+              )}
+              {allowedTabs.includes('executive') && (
+                <div className="quickCard" onClick={() => setTab('executive')}>
+                  <div className="qIcon rpt"><BarChart3 size={22} /></div>
+                  <b>Owner Reports &amp; Weather</b>
+                  <p>Live crane/concrete weather alerts and 1-click weekly executive PDFs.</p>
+                </div>
+              )}
+              {allowedTabs.includes('tasks') && !allowedTabs.includes('snagging') && (
+                <div className="quickCard" onClick={() => setTab('tasks')}>
+                  <div className="qIcon tsk"><ClipboardList size={22} /></div>
+                  <b>Assigned Tasks</b>
+                  <p>Review and execute assigned trade schedule milestones.</p>
+                </div>
+              )}
+              {allowedTabs.includes('issues') && !allowedTabs.includes('voice') && (
+                <div className="quickCard" onClick={() => setTab('issues')}>
+                  <div className="qIcon iss"><AlertTriangle size={22} /></div>
+                  <b>Punch List Defects</b>
+                  <p>Track defect remediation and verification status.</p>
+                </div>
+              )}
             </div>
             <section className="panel" style={{ marginTop: '18px' }}>
               <div className="panelHead">
@@ -522,10 +756,17 @@ export default function App() {
                 <p>Projects belonging to your organization.</p>
               </div>
             </div>
-            <form className="inlineForm" onSubmit={createProject}>
-              <input required value={projectName} onChange={e => setProjectName(e.target.value)} placeholder="New project name" />
-              <button className="primary compact"><Plus size={16} /> Add project</button>
-            </form>
+            {(!isOwner && !isPM) ? (
+              <div style={{ padding: '10px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                <Shield size={16} color="#0284c7" />
+                <span><b>Read-Only Project Directory:</b> Creating or archiving projects is restricted to Project Owners &amp; Project Managers.</span>
+              </div>
+            ) : (
+              <form className="inlineForm" onSubmit={createProject}>
+                <input required value={projectName} onChange={e => setProjectName(e.target.value)} placeholder="New project name" />
+                <button className="primary compact"><Plus size={16} /> Add project</button>
+              </form>
+            )}
             <div className="rows">
               {projects.map(p => (
                 <button className="dataRow" key={p.id} onClick={() => setSelected(p.id)}>
@@ -552,16 +793,36 @@ export default function App() {
             ) : (
               <>
                 {tab === 'tasks' && (
-                  <form className="inlineForm" onSubmit={createTask}>
-                    <input required value={taskTitle} onChange={e => setTaskTitle(e.target.value)} placeholder="Describe a task" />
-                    <button className="primary compact"><Plus size={16} /> Add task</button>
-                  </form>
+                  isViewer ? (
+                    <div style={{ padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
+                      <Eye size={14} color="#0284c7" />
+                      <span><b>Viewer / Inspector Mode:</b> Read-only access to schedule tasks.</span>
+                    </div>
+                  ) : (
+                    <form className="inlineForm" onSubmit={createTask}>
+                      <input required value={taskTitle} onChange={e => setTaskTitle(e.target.value)} placeholder="Describe a task" />
+                      <button className="primary compact"><Plus size={16} /> Add task</button>
+                    </form>
+                  )
                 )}
                 {tab === 'issues' && (
-                  <form className="inlineForm" onSubmit={createIssue}>
-                    <input required value={issueTitle} onChange={e => setIssueTitle(e.target.value)} placeholder="Describe a site issue" />
-                    <button className="primary compact"><Plus size={16} /> Report issue</button>
-                  </form>
+                  isViewer ? (
+                    <div style={{ padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
+                      <Eye size={14} color="#0284c7" />
+                      <span><b>Viewer / Inspector Mode:</b> Read-only inspection of Punch List defects.</span>
+                    </div>
+                  ) : (
+                    <form className="inlineForm" onSubmit={createIssue}>
+                      <input required value={issueTitle} onChange={e => setIssueTitle(e.target.value)} placeholder="Describe a site issue" />
+                      <button className="primary compact"><Plus size={16} /> Report issue</button>
+                    </form>
+                  )
+                )}
+                {tab === 'reports' && isViewer && (
+                  <div style={{ padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
+                    <Eye size={14} color="#0284c7" />
+                    <span><b>Viewer / Inspector Mode:</b> Viewing certified daily site reports.</span>
+                  </div>
                 )}
                 <div className="rows">
                   {items.length ? (
@@ -695,10 +956,17 @@ export default function App() {
               <p className="empty">Select a project first.</p>
             ) : (
               <>
-                <form className="inlineForm" onSubmit={uploadDoc}>
-                  <input type="file" accept="application/pdf,.pdf" required onChange={e => setDocFile(e.target.files?.[0] || null)} />
-                  <button className="primary compact" disabled={!docFile}><Plus size={16} /> Upload PDF</button>
-                </form>
+                {(!isOwner && !isPM) ? (
+                  <div style={{ padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
+                    <Shield size={14} color="#0284c7" />
+                    <span><b>Specification Ingestion:</b> Managed by Project Owners &amp; PMs. Use the semantic query tool below to search indexed specifications.</span>
+                  </div>
+                ) : (
+                  <form className="inlineForm" onSubmit={uploadDoc}>
+                    <input type="file" accept="application/pdf,.pdf" required onChange={e => setDocFile(e.target.files?.[0] || null)} />
+                    <button className="primary compact" disabled={!docFile}><Plus size={16} /> Upload PDF</button>
+                  </form>
+                )}
                 <div className="rows">
                   {docs.map(d => (
                     <div className="dataRow" key={d.id}>

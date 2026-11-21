@@ -90,6 +90,8 @@ export function UserProfileManagerView({ onProfileUpdated }: { onProfileUpdated?
       if (myProf.isProjectOwner) {
         const teamList = await api.users().catch(() => [])
         setTeam(teamList)
+      } else {
+        setSubTab('profile')
       }
     } catch (e: any) {
       setError(e.message || 'Failed to load profile data')
@@ -316,24 +318,26 @@ export function UserProfileManagerView({ onProfileUpdated }: { onProfileUpdated?
         >
           <User size={15} /> My Profile &amp; Credentials
         </button>
-        <button
-          type="button"
-          onClick={() => setSubTab('team')}
-          style={{
-            padding: '14px 18px',
-            border: 0,
-            background: 'transparent',
-            font: subTab === 'team' ? '700 13px Manrope' : '500 13px DM Sans',
-            color: subTab === 'team' ? '#0284c7' : '#64748b',
-            borderBottom: subTab === 'team' ? '3px solid #0284c7' : '3px solid transparent',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
-          }}
-        >
-          <Users size={15} /> Team &amp; Role-Based Access ({team.length || 1})
-        </button>
+        {profile?.isProjectOwner && (
+          <button
+            type="button"
+            onClick={() => setSubTab('team')}
+            style={{
+              padding: '14px 18px',
+              border: 0,
+              background: 'transparent',
+              font: subTab === 'team' ? '700 13px Manrope' : '500 13px DM Sans',
+              color: subTab === 'team' ? '#0284c7' : '#64748b',
+              borderBottom: subTab === 'team' ? '3px solid #0284c7' : '3px solid transparent',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <Users size={15} /> Team &amp; Role-Based Access ({team.length || 1})
+          </button>
+        )}
       </div>
 
       {/* Content */}
