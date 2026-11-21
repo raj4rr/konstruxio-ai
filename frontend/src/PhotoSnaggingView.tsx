@@ -31,7 +31,33 @@ export function PhotoSnaggingView({ projectId }: { projectId: string }) {
     const file = e.target.files?.[0]
     if (file) {
       setPhotoFile(file)
-      setPreviewUrl(URL.createObjectURL(file))
+      const reader = new FileReader()
+      reader.onload = (re) => {
+        const img = new Image()
+        img.onload = () => {
+          const maxDim = 800
+          let w = img.width
+          let h = img.height
+          if (w > maxDim || h > maxDim) {
+            if (w > h) {
+              h = Math.round((h * maxDim) / w)
+              w = maxDim
+            } else {
+              w = Math.round((w * maxDim) / h)
+              h = maxDim
+            }
+          }
+          const canvas = document.createElement('canvas')
+          canvas.width = w
+          canvas.height = h
+          const ctx = canvas.getContext('2d')
+          ctx?.drawImage(img, 0, 0, w, h)
+          const compressed = canvas.toDataURL('image/jpeg', 0.8)
+          setPreviewUrl(compressed)
+        }
+        img.src = re.target?.result as string
+      }
+      reader.readAsDataURL(file)
       setDiagnosis(null)
     }
   }
@@ -174,9 +200,16 @@ export function PhotoSnaggingView({ projectId }: { projectId: string }) {
           {issues.map(iss => (
             <div key={iss.id} className="snagCard">
               {iss.photoData ? (
-                <img src={iss.photoData} alt={iss.title} className="snagThumb" />
+                <img
+                  src={iss.photoData}
+                  alt={iss.title}
+                  className="snagThumb"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = '/inspections/firestop-penetration.svg'
+                  }}
+                />
               ) : (
-                <div className="noPhotoThumb"><AlertTriangle size={24} /></div>
+                <img src="/inspections/firestop-penetration.svg" alt="Inspection photo" className="snagThumb" />
               )}
               <div className="snagCardBody">
                 <div className="cardBadgeRow">

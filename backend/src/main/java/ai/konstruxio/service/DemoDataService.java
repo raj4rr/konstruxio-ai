@@ -23,6 +23,8 @@ public class DemoDataService {
     private final Reports reports;
     private final DrawingSheets drawingSheets;
     private final DrawingPins drawingPins;
+    private final Rfis rfis;
+    private final TmTickets tmTickets;
     private final DocumentRepository documents;
     private final JdbcTemplate jdbc;
     private final PasswordEncoder encoder;
@@ -38,6 +40,8 @@ public class DemoDataService {
         Reports reports,
         DrawingSheets drawingSheets,
         DrawingPins drawingPins,
+        Rfis rfis,
+        TmTickets tmTickets,
         DocumentRepository documents,
         JdbcTemplate jdbc,
         PasswordEncoder encoder,
@@ -52,6 +56,8 @@ public class DemoDataService {
         this.reports = reports;
         this.drawingSheets = drawingSheets;
         this.drawingPins = drawingPins;
+        this.rfis = rfis;
+        this.tmTickets = tmTickets;
         this.documents = documents;
         this.jdbc = jdbc;
         this.encoder = encoder;
@@ -154,25 +160,29 @@ public class DemoDataService {
             "Missing Firestop Intumescent Collar around 4\" PVC Drain",
             "Through-penetration in 2-hour rated fire separation wall near elevator core is unsealed.",
             "CRITICAL", "OPEN", "Safety", "Elevator Shaft Level 2",
-            "Install Hilti CP 643N intumescent firestop collar with smoke seal to restore 2-hour rating per UL System W-L-2128.");
+            "Install Hilti CP 643N intumescent firestop collar with smoke seal to restore 2-hour rating per UL System W-L-2128.",
+            "/inspections/firestop-penetration.svg");
 
         createIssue(org.id, project.id, user.id,
             "Conduit Tray Clashing with 600mm HVAC Supply Duct",
             "Primary cable tray elevation +2.85m collides with supply air drop at intersection corridor.",
             "HIGH", "OPEN", "Electrical", "Main Corridor Grid C-4",
-            "Lower cable tray bracket by 150mm using trapeze hanger drop rods or request mechanical offset.");
+            "Lower cable tray bracket by 150mm using trapeze hanger drop rods or request mechanical offset.",
+            "/inspections/conduit-duct-clash.svg");
 
         createIssue(org.id, project.id, user.id,
             "Damaged Steel Door Frame Buck — Office 201",
             "Bottom anchor on steel buck bent during drywall cart delivery transport.",
             "MEDIUM", "RESOLVED", "Finishes", "Office 201 Entry",
-            "Weld replacement expansion anchor, shim, and re-grout steel frame buck before hanging leaf.");
+            "Weld replacement expansion anchor, shim, and re-grout steel frame buck before hanging leaf.",
+            "/inspections/door-frame-buck.svg");
 
         createIssue(org.id, project.id, user.id,
             "Water Ponding on Temporary Protection Membrane",
             "Inadequate drainage slope on Level 3 exposed slab edge after yesterday's rain shower.",
             "MEDIUM", "OPEN", "Structural", "Level 3 Balcony Deck",
-            "Squeegee standing water immediately to prevent efflorescence and slip hazards; clear scupper drains.");
+            "Squeegee standing water immediately to prevent efflorescence and slip hazards; clear scupper drains.",
+            "/inspections/water-ponding.svg");
 
         // 4. Daily Site Reports (Past 5 Days)
         createReport(org.id, project.id, user.id, LocalDate.now(),
@@ -238,6 +248,46 @@ public class DemoDataService {
         createPin(org.id, project.id, sheet.id, user.id, 21.0, 42.0,
             "Verify Riser Pressure Gauge", "TASK", "LOW", "OPEN", "Plumbing",
             "Certify 150 PSI hydrostatic pressure holds for 24 hours.");
+
+        // 5b. KONSTRUXIO Voice RFIs and T&M Extra Work Tickets
+        createRfi(org.id, project.id, user.id, "RFI-042",
+            "HVAC Duct vs Structural Primary Beam Clash at Grid C-4",
+            "Supply air duct (600x400) conflicts with 450mm primary steel flange on Level 2 Grid C-4. Request architect confirmation on whether to transition into twin 250mm low-profile ducts or sleeve beam.",
+            "Mechanical & Structural", "HVAC", "Sheet A-201 / Grid C-4",
+            "Transition into dual 250mm rectangular ducts under beam soffit with acoustic lining.",
+            true, false, "ANSWERED",
+            "Approved to transition into twin ducts. Maintain 150mm clearance to parallel electrical cable tray per Spec 015000.");
+
+        createRfi(org.id, project.id, user.id, "RFI-043",
+            "Intumescent Collar Specification on 4-Inch PVC Core Penetrations",
+            "Spec 078400 mandates intumescent collars on 4-inch PVC penetrations. Confirm approved model for 2-hour rating in electrical riser room.",
+            "Fire Protection & Plumbing", "Plumbing", "Sheet A-201 / Electrical Riser Core",
+            "Install Hilti CP 643N intumescent collar with CP 25WB+ seal.",
+            false, false, "OPEN", null);
+
+        createTmTicket(org.id, project.id, user.id, "TM-108",
+            "Emergency Conduit Relocation & 4x 20A Dedicated Drops in Server Room",
+            "Requested on-site by Mark Weber (Client Owner Representative) to accommodate upgraded server racks.",
+            "Electrical",
+            "2 Journeyman Electricians × 4.5 hrs = 9.0 man-hours @ $95/hr ($855.00)",
+            "65m 1\" EMT conduit, 4 deep gang boxes, 4 Leviton 20A industrial grade duplex receptacles, mounting hardware ($325.00)",
+            1180.00, "APPROVED", "DIGITALLY_SIGNED_MW_20261120", "Mark Weber (Owner Rep)");
+
+        createTmTicket(org.id, project.id, user.id, "TM-109",
+            "Additional Concrete Core Drilling for HVAC Low-Profile Transition",
+            "Requested by General Superintendent to clear ceiling elevation at Grid C-4.",
+            "Concrete & Coring",
+            "1 Coring Specialist × 3.0 hrs = 3.0 man-hours @ $110/hr ($330.00)",
+            "Diamond core bit wear, slurry containment, firestop sealant ($190.00)",
+            520.00, "PENDING_APPROVAL", null, null);
+
+        createPin(org.id, project.id, sheet.id, user.id, 42.0, 35.0,
+            "RFI-042: HVAC Duct vs Structural Beam Clash", "RFI", "HIGH", "ANSWERED", "HVAC",
+            "Grid C-4 clash. Transition into dual 250mm low-profile ducts approved.");
+
+        createPin(org.id, project.id, sheet.id, user.id, 76.5, 45.0,
+            "TM-108: Server Room 4x 20A Drops & Conduit", "TM_TICKET", "MEDIUM", "APPROVED", "Electrical",
+            "Client requested extra work. $1,180.00 approved and digitally signed.");
 
         // 6. Pre-indexed Project Document (Firestopping & Concrete Specs)
         try {
@@ -315,7 +365,7 @@ public class DemoDataService {
         tasks.save(t);
     }
 
-    private void createIssue(UUID orgId, UUID projId, UUID userId, String title, String desc, String severity, String status, String trade, String loc, String aiSug) {
+    private void createIssue(UUID orgId, UUID projId, UUID userId, String title, String desc, String severity, String status, String trade, String loc, String aiSug, String photoData) {
         SiteIssue i = new SiteIssue();
         i.organizationId = orgId;
         i.projectId = projId;
@@ -326,6 +376,7 @@ public class DemoDataService {
         i.trade = trade;
         i.locationReference = loc;
         i.aiSuggestion = aiSug;
+        i.photoData = photoData;
         i.reportedBy = userId;
         issues.save(i);
     }
@@ -362,5 +413,43 @@ public class DemoDataService {
         p.description = desc;
         p.createdBy = userId;
         drawingPins.save(p);
+    }
+
+    private void createRfi(UUID orgId, UUID projId, UUID userId, String number, String title, String question, String discipline, String trade, String drawingRef, String solution, boolean schedule, boolean cost, String status, String response) {
+        Rfi r = new Rfi();
+        r.organizationId = orgId;
+        r.projectId = projId;
+        r.rfiNumber = number;
+        r.title = title;
+        r.question = question;
+        r.discipline = discipline;
+        r.trade = trade;
+        r.drawingReference = drawingRef;
+        r.suggestedSolution = solution;
+        r.scheduleImpact = schedule;
+        r.costImpact = cost;
+        r.status = status;
+        r.officialResponse = response;
+        r.createdBy = userId;
+        rfis.save(r);
+    }
+
+    private void createTmTicket(UUID orgId, UUID projId, UUID userId, String number, String title, String directive, String trade, String labor, String materials, double cost, String status, String signature, String signer) {
+        TmTicket t = new TmTicket();
+        t.organizationId = orgId;
+        t.projectId = projId;
+        t.ticketNumber = number;
+        t.title = title;
+        t.clientDirective = directive;
+        t.trade = trade;
+        t.laborHours = labor;
+        t.materialsUsed = materials;
+        t.estimatedCost = java.math.BigDecimal.valueOf(cost);
+        t.status = status;
+        t.customerSignature = signature;
+        t.signedBy = signer;
+        if (signer != null) t.signedAt = java.time.Instant.now().minus(java.time.Duration.ofHours(24));
+        t.createdBy = userId;
+        tmTickets.save(t);
     }
 }

@@ -79,6 +79,8 @@
 .pinMarker.high{color:#f97316}
 .pinMarker.medium{color:#eab308}
 .pinMarker.low{color:#38bdf8}
+.pinMarker.rfi{color:#0284c7!important}
+.pinMarker.tm_ticket{color:#d97706!important}
 .pinMarker.resolved{color:#22c55e;opacity:.7}
 .pinMarker.pending{color:#a855f7}
 .pinLabel{background:rgba(15,23,42,.85);color:#fff;font:700 9px sans-serif;padding:2px 6px;border-radius:4px;white-space:nowrap;margin-top:2px;pointer-events:none}
@@ -177,3 +179,6 @@
 .demoDivider span{position:relative;background:#fff;padding:0 10px;font:700 9px Manrope;color:#94a3b8;letter-spacing:1px}
 .demoBtn{width:100%;border-color:#168d78;color:#168d78;background:#f0fdf9;padding:12px;font-weight:700}
 .demoBtn:hover{background:#ccfbf1}
+
+.rowThumbnail{width:46px;height:46px;border-radius:8px;object-fit:cover;border:1px solid #cbd5e1;flex-shrink:0}
+.snagThumb{width:100%;height:165px;object-fit:cover;background:#1e293b;display:block}

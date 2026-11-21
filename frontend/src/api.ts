@@ -101,5 +101,16 @@ export const api = {
 
   // Feature 4: Weather & Executive Weekly Owner Reports
   weather: (projectId: string) => request<any>(`/api/projects/${projectId}/weather`),
-  executiveReport: (projectId: string) => request<any>(`/api/projects/${projectId}/reports/executive`)
+  executiveReport: (projectId: string) => request<any>(`/api/projects/${projectId}/reports/executive`),
+
+  // Feature 5: KONSTRUXIO AI - RFIs & Time & Material (T&M) Extra Work
+  rfis: (projectId: string) => request<any[]>(`/api/projects/${projectId}/rfis`),
+  createRfi: (projectId: string, data: any) => request<any>(`/api/projects/${projectId}/rfis`, { method: 'POST', body: JSON.stringify(data) }),
+  respondRfi: (projectId: string, id: string, response: string, status?: string) => request<any>(`/api/projects/${projectId}/rfis/${id}/respond`, { method: 'PUT', body: JSON.stringify({ officialResponse: response, status: status || 'ANSWERED' }) }),
+  deleteRfi: (projectId: string, id: string) => request<any>(`/api/projects/${projectId}/rfis/${id}`, { method: 'DELETE' }),
+
+  tmTickets: (projectId: string) => request<any[]>(`/api/projects/${projectId}/tm-tickets`),
+  createTmTicket: (projectId: string, data: any) => request<any>(`/api/projects/${projectId}/tm-tickets`, { method: 'POST', body: JSON.stringify(data) }),
+  signTmTicket: (projectId: string, id: string, signedBy?: string, signature?: string) => request<any>(`/api/projects/${projectId}/tm-tickets/${id}/sign`, { method: 'PUT', body: JSON.stringify({ signedBy: signedBy || 'Client Representative', signature: signature || 'DIGITALLY_APPROVED' }) }),
+  deleteTmTicket: (projectId: string, id: string) => request<any>(`/api/projects/${projectId}/tm-tickets/${id}`, { method: 'DELETE' })
 }

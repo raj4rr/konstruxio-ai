@@ -14,16 +14,21 @@ import {
   Mic,
   MapPin,
   Camera,
-  BarChart3
+  BarChart3,
+  Download,
+  Zap
 } from 'lucide-react'
 import { VoiceAgentView } from './VoiceAgentView'
 import { BlueprintView } from './BlueprintView'
 import { PhotoSnaggingView } from './PhotoSnaggingView'
 import { ExecutiveReportView } from './ExecutiveReportView'
+import { KonstruxioCopilotView } from './KonstruxioCopilotView'
+import { ProjectWalkthroughSlide } from './ProjectWalkthroughSlide'
 
 type Project = { id: string; name: string; description?: string; location?: string; status: string }
 type Tab =
   | 'overview'
+  | 'copilot'
   | 'voice'
   | 'blueprints'
   | 'snagging'
@@ -169,6 +174,25 @@ export default function App() {
     }
   }
 
+  async function loadSamplePdf() {
+    if (!selected) return
+    setBusy(true)
+    setError('')
+    try {
+      const res = await fetch('/sample-construction-specification.pdf')
+      if (!res.ok) throw new Error('Could not fetch sample PDF: ' + res.statusText)
+      const blob = await res.blob()
+      const file = new File([blob], 'sample-construction-specification.pdf', { type: 'application/pdf' })
+      await api.uploadDocument(selected, file)
+      setDocs(await api.documents(selected))
+      setError('Sample specification PDF successfully uploaded and indexed into pgvector!')
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function askDoc(e: React.FormEvent) {
     e.preventDefault()
     if (!selected) return
@@ -246,6 +270,7 @@ export default function App() {
 
   const nav: [Tab, string, any][] = [
     ['overview', 'Overview', LayoutDashboard],
+    ['copilot', '⚡ KONSTRUXIO AI Suite', Sparkles],
     ['voice', 'Voice-to-Action', Mic],
     ['blueprints', 'Blueprints & Pins', MapPin],
     ['snagging', 'Photo Snagging', Camera],
@@ -327,6 +352,44 @@ export default function App() {
                 <small>Connected to Konstruxio API &amp; AI</small>
               </article>
             </div>
+            {/* KONSTRUXIO Hero Feature Banner */}
+            <div style={{
+              background: 'linear-gradient(135deg, #0f172a, #1e293b)',
+              borderRadius: '14px',
+              padding: '22px 26px',
+              marginTop: '19px',
+              color: 'white',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '16px',
+              cursor: 'pointer',
+              border: '1px solid #334155',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+            }} onClick={() => setTab('copilot')}>
+              <div style={{ maxWidth: '680px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <span style={{ background: '#0284c7', color: 'white', padding: '3px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: 800 }}>
+                    KONSTRUXIO AI SUITE
+                  </span>
+                  <span style={{ fontSize: '12px', color: '#38bdf8' }}>Next-Generation Field Copilot</span>
+                </div>
+                <h3 style={{ margin: '0 0 6px', font: '800 18px Manrope', color: 'white' }}>
+                  Voice-to-RFI, T&amp;M Extra Work Billing &amp; Operational Field Copilot
+                </h3>
+                <p style={{ margin: 0, fontSize: '12px', color: '#cbd5e1' }}>
+                  Dictate site observations in 8+ languages &rarr; instantly extract formal engineering RFIs, protect contractor revenue with Time &amp; Material tickets, and drop pins on blueprints.
+                </p>
+              </div>
+              <button type="button" className="primary" style={{ background: '#0284c7', pointerEvents: 'none' }}>
+                <Sparkles size={16} /> Open KONSTRUXIO Suite
+              </button>
+            </div>
+
+            {/* Single-Slide Complete End-to-End Project Walkthrough (Minimal Clicks) */}
+            <ProjectWalkthroughSlide onSelectTab={tabId => setTab(tabId)} />
+
             <div className="quickFeatureGrid">
               <div className="quickCard" onClick={() => setTab('voice')}>
                 <div className="qIcon mic"><Mic size={22} /></div>
@@ -361,6 +424,11 @@ export default function App() {
               </div>
             </section>
           </>
+        )}
+
+        {/* KONSTRUXIO AI Suite */}
+        {tab === 'copilot' && (
+          <KonstruxioCopilotView projectId={selected} onDataChanged={() => refreshData()} />
         )}
 
         {/* 2. Feature 1: Voice-to-Action Field Agent */}
@@ -440,6 +508,14 @@ export default function App() {
                         <span className="rowIcon">
                           {tab === 'tasks' ? <ClipboardList /> : tab === 'issues' ? <AlertTriangle /> : <FileText />}
                         </span>
+                        {tab === 'issues' && x.photoData && (
+                          <img
+                            src={x.photoData}
+                            alt={x.title}
+                            className="rowThumbnail"
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/inspections/firestop-penetration.svg' }}
+                          />
+                        )}
                         <span>
                           <b>{x.title || `Report · ${x.reportDate}`}</b>
                           <small>{x.description || x.workCompleted || x.createdAt || ''}</small>
@@ -481,6 +557,78 @@ export default function App() {
                 <p>Upload searchable PDF specifications, plans or site documents for semantic AI search.</p>
               </div>
             </div>
+
+            {/* Ready-to-Use Construction Specification Sample Box */}
+            <div style={{
+              background: '#f0fdf9',
+              border: '1px solid #a7f3d0',
+              borderRadius: '12px',
+              padding: '16px 18px',
+              marginBottom: '18px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#065f46', fontWeight: 800, fontSize: '14px' }}>
+                    <Sparkles size={16} /> Sample Construction Specification (Searchable PDF)
+                  </div>
+                  <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#047857' }}>
+                    3-page technical spec: Section 033000 (Concrete Curing &amp; Temperatures), Section 078400 (Firestopping), and Section 015000 (Crane Wind Thresholds &amp; MEP Clearances).
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '9px', flexWrap: 'wrap' }}>
+                  <a
+                    href="/sample-construction-specification.pdf"
+                    download="sample-construction-specification.pdf"
+                    className="secondary compact"
+                    style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Download size={15} /> Download PDF (24 KB)
+                  </a>
+                  <button
+                    type="button"
+                    className="primary compact"
+                    onClick={loadSamplePdf}
+                    disabled={busy || !selected}
+                  >
+                    <Zap size={15} /> {busy ? 'Uploading & Indexing…' : '⚡ 1-Click Upload & Index'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Sample queries chips */}
+              <div style={{ borderTop: '1px solid #d1fae5', marginTop: '12px', paddingTop: '10px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#065f46', marginRight: '6px' }}>
+                  Click to Ask Semantic Questions:
+                </span>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
+                  {[
+                    'What is the minimum temperature for pouring structural concrete?',
+                    'What intumescent collar is required for PVC pipe penetrations?',
+                    'At what wind speed must tower crane operations cease?',
+                    'What is the minimum clearance between cable trays and HVAC ducts?'
+                  ].map((q, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      style={{
+                        background: '#ffffff',
+                        border: '1px solid #6ee7b7',
+                        borderRadius: '16px',
+                        padding: '4px 10px',
+                        fontSize: '11px',
+                        color: '#065f46',
+                        cursor: 'pointer',
+                        textAlign: 'left'
+                      }}
+                      onClick={() => setDocQuestion(q)}
+                    >
+                      💡 {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             {!selected ? (
               <p className="empty">Select a project first.</p>
             ) : (

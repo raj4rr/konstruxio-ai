@@ -28,6 +28,8 @@ public class VoiceController {
     private final Tasks tasksRepo;
     private final Issues issuesRepo;
     private final Reports reportsRepo;
+    private final Rfis rfisRepo;
+    private final TmTickets tmTicketsRepo;
     private final ProjectService projectService;
 
     public VoiceController(
@@ -36,6 +38,8 @@ public class VoiceController {
         Tasks tasksRepo,
         Issues issuesRepo,
         Reports reportsRepo,
+        Rfis rfisRepo,
+        TmTickets tmTicketsRepo,
         ProjectService projectService
     ) {
         this.mediaUrl = mediaUrl;
@@ -43,6 +47,8 @@ public class VoiceController {
         this.tasksRepo = tasksRepo;
         this.issuesRepo = issuesRepo;
         this.reportsRepo = reportsRepo;
+        this.rfisRepo = rfisRepo;
+        this.tmTicketsRepo = tmTicketsRepo;
         this.projectService = projectService;
     }
 
@@ -95,6 +101,8 @@ public class VoiceController {
 
         int tasksCreated = 0;
         int issuesCreated = 0;
+        int rfisCreated = 0;
+        int tmTicketsCreated = 0;
         boolean reportSaved = false;
 
         // 1. Daily Report
@@ -163,11 +171,66 @@ public class VoiceController {
             }
         }
 
+        // 4. KONSTRUXIO RFIs
+        if (payload.containsKey("rfis") && payload.get("rfis") instanceof List) {
+            List<Map<String, Object>> rfiList = (List<Map<String, Object>>) payload.get("rfis");
+            for (Map<String, Object> rm : rfiList) {
+                String title = (String) rm.get("title");
+                if (title != null && !title.isBlank()) {
+                    Rfi rfi = new Rfi();
+                    rfi.organizationId = user.organizationId();
+                    rfi.projectId = projectId;
+                    rfi.rfiNumber = (String) rm.getOrDefault("rfiNumber", "RFI-" + (100 + rfisRepo.findAllByOrganizationIdAndProjectIdOrderByCreatedAtDesc(user.organizationId(), projectId).size() + 1));
+                    rfi.title = title;
+                    rfi.question = (String) rm.getOrDefault("question", title);
+                    rfi.discipline = (String) rm.getOrDefault("discipline", "General");
+                    rfi.trade = (String) rm.getOrDefault("trade", "General");
+                    rfi.drawingReference = (String) rm.getOrDefault("drawingReference", "Level 2 Floor Plan");
+                    rfi.suggestedSolution = (String) rm.getOrDefault("suggestedSolution", "");
+                    rfi.scheduleImpact = Boolean.TRUE.equals(rm.get("scheduleImpact"));
+                    rfi.costImpact = Boolean.TRUE.equals(rm.get("costImpact"));
+                    rfi.status = "OPEN";
+                    rfi.createdBy = user.id();
+                    rfisRepo.save(rfi);
+                    rfisCreated++;
+                }
+            }
+        }
+
+        // 5. KONSTRUXIO Time & Material (T&M) Extra Work Tickets
+        if (payload.containsKey("tmTickets") && payload.get("tmTickets") instanceof List) {
+            List<Map<String, Object>> tmList = (List<Map<String, Object>>) payload.get("tmTickets");
+            for (Map<String, Object> tmm : tmList) {
+                String title = (String) tmm.get("title");
+                if (title != null && !title.isBlank()) {
+                    TmTicket t = new TmTicket();
+                    t.organizationId = user.organizationId();
+                    t.projectId = projectId;
+                    t.ticketNumber = (String) tmm.getOrDefault("ticketNumber", "TM-" + (200 + tmTicketsRepo.findAllByOrganizationIdAndProjectIdOrderByCreatedAtDesc(user.organizationId(), projectId).size() + 1));
+                    t.title = title;
+                    t.clientDirective = (String) tmm.getOrDefault("clientDirective", "Requested verbally on site");
+                    t.trade = (String) tmm.getOrDefault("trade", "General");
+                    t.laborHours = (String) tmm.getOrDefault("laborHours", "TBD");
+                    t.materialsUsed = (String) tmm.getOrDefault("materialsUsed", "TBD");
+                    Object cost = tmm.get("estimatedCost");
+                    if (cost instanceof Number) {
+                        t.estimatedCost = java.math.BigDecimal.valueOf(((Number) cost).doubleValue());
+                    }
+                    t.status = "PENDING_APPROVAL";
+                    t.createdBy = user.id();
+                    tmTicketsRepo.save(t);
+                    tmTicketsCreated++;
+                }
+            }
+        }
+
         return Map.of(
             "success", true,
             "reportSaved", reportSaved,
             "tasksCreated", tasksCreated,
-            "issuesCreated", issuesCreated
+            "issuesCreated", issuesCreated,
+            "rfisCreated", rfisCreated,
+            "tmTicketsCreated", tmTicketsCreated
         );
     }
 

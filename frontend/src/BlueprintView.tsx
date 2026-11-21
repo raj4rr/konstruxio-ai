@@ -180,10 +180,10 @@ export function BlueprintView({ projectId }: { projectId: string }) {
             return (
               <div
                 key={pin.id}
-                className={`pinMarker ${pin.severity?.toLowerCase()} ${isResolved ? 'resolved' : ''} ${activePin?.id === pin.id ? 'active' : ''}`}
+                className={`pinMarker ${pin.pinType?.toLowerCase() || ''} ${pin.severity?.toLowerCase()} ${isResolved ? 'resolved' : ''} ${activePin?.id === pin.id ? 'active' : ''}`}
                 style={{ left: `${pin.xPercent}%`, top: `${pin.yPercent}%` }}
                 onClick={e => { e.stopPropagation(); setActivePin(pin); setPendingCoords(null) }}
-                title={`${pin.title} (${pin.severity})`}
+                title={`${pin.title} (${pin.pinType || 'ISSUE'})`}
               >
                 <MapPin size={22} />
                 <span className="pinLabel">{pin.title}</span>
@@ -215,6 +215,8 @@ export function BlueprintView({ projectId }: { projectId: string }) {
                 <label>Type
                   <select value={pinType} onChange={e => setPinType(e.target.value)}>
                     <option value="ISSUE">Defect / Issue</option>
+                    <option value="RFI">❓ Engineering RFI (KONSTRUXIO)</option>
+                    <option value="TM_TICKET">💰 T&amp;M Extra Work (KONSTRUXIO)</option>
                     <option value="TASK">Field Task</option>
                     <option value="SAFETY">Safety Hazard</option>
                     <option value="NOTE">Site Note</option>

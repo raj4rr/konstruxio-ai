@@ -85,11 +85,31 @@ public class AiService {
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> parseFieldNote(String fieldNote) {
-        String system = "You are an expert construction site manager and AI parser. " +
-            "Analyze the superintendent's or foreman's voice dictation and extract a structured construction action plan. " +
-            "Return ONLY a valid JSON object matching this schema without any surrounding markdown backticks or commentary:\n" +
+        String system = "You are KONSTRUXIO AI (or 'Konstruxio Field Agent'), an expert construction site operational AI agent. " +
+            "Analyze the field crew's, foreman's or superintendent's spoken dictation (which may be in English, German, Spanish, French, Polish, Hindi, etc.) " +
+            "and extract a comprehensive, structured construction operational package. " +
+            "Accurately identify and extract: " +
+            "1. RFIs (Requests for Information): technical clashes, ambiguities or architect questions. " +
+            "2. T&M Tickets (Time & Material): out-of-scope / extra work requested by client, breakdown of labor hours & materials. " +
+            "3. Action Tasks: actionable to-dos with priorities. " +
+            "4. Defects/Hazards: site safety or punch list defects with severity and trade. " +
+            "5. Daily Site Log: weather, workers count, work completed, blockers, materials. " +
+            "6. Takeoffs: any measurements or quantities spoken. " +
+            "7. Detected language and professional English translation summary. " +
+            "Return ONLY a valid JSON object matching this schema without any markdown code fences:\n" +
             "{\n" +
             "  \"summary\": \"Concise overview of what happened\",\n" +
+            "  \"detectedLanguage\": \"en|de|es|fr|pl|hi|other\",\n" +
+            "  \"translatedSummary\": \"Formal English translation / executive summary\",\n" +
+            "  \"rfis\": [\n" +
+            "    {\"rfiNumber\": \"RFI-042\", \"title\": \"Title\", \"question\": \"Detailed question\", \"discipline\": \"Mechanical/Structural/Electrical\", \"trade\": \"HVAC\", \"drawingReference\": \"Level 2 Grid C-4\", \"suggestedSolution\": \"Proposed fix\", \"scheduleImpact\": false, \"costImpact\": false}\n" +
+            "  ],\n" +
+            "  \"tmTickets\": [\n" +
+            "    {\"ticketNumber\": \"TM-108\", \"title\": \"Extra work title\", \"clientDirective\": \"Requested by Mark\", \"trade\": \"Electrical\", \"laborHours\": \"2 electricians x 4h = 8h @ $95/hr\", \"materialsUsed\": \"60m EMT conduit, 4 gang boxes\", \"estimatedCost\": 1180.00}\n" +
+            "  ],\n" +
+            "  \"takeoffs\": [\n" +
+            "    {\"item\": \"4-inch PVC pipe\", \"quantity\": 140, \"unit\": \"m\", \"estimatedCost\": 840.00}\n" +
+            "  ],\n" +
             "  \"dailyReport\": {\n" +
             "    \"weather\": \"Weather mentioned or null\",\n" +
             "    \"workersCount\": 10,\n" +
@@ -109,6 +129,11 @@ public class AiService {
         String raw = callRaw(system, "FIELD DICTATION:\n" + fieldNote);
         return extractJson(raw, Map.of(
             "summary", "Extracted from field dictation",
+            "detectedLanguage", "en",
+            "translatedSummary", fieldNote,
+            "rfis", List.of(),
+            "tmTickets", List.of(),
+            "takeoffs", List.of(),
             "dailyReport", Map.of(
                 "weather", "Site conditions as reported",
                 "workersCount", 8,
